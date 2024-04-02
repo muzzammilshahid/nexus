@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/gammazero/nexus/v3/router"
 	"github.com/gammazero/nexus/v3/transport"
 	"github.com/gammazero/nexus/v3/transport/serialize"
 	"github.com/gammazero/nexus/v3/wamp"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCloseWebsocketPeer(t *testing.T) {
