@@ -1,42 +1,50 @@
 package transport_test
 
 import (
-	"context"
 	"fmt"
+	"log"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/gorilla/websocket"
 
-	"github.com/gammazero/nexus/v3/router"
 	"github.com/gammazero/nexus/v3/transport"
 	"github.com/gammazero/nexus/v3/transport/serialize"
-	"github.com/gammazero/nexus/v3/wamp"
 )
 
+type mockWSConnection struct{}
+
+func (m mockWSConnection) Close() error { return nil }
+
+func (m mockWSConnection) WriteControl(messageType int, data []byte, deadline time.Time) error {
+	return nil
+}
+
+func (m mockWSConnection) WriteMessage(messageType int, data []byte) error {
+	return nil
+}
+
+func (m mockWSConnection) ReadMessage() (messageType int, p []byte, err error) {
+	err = fmt.Errorf("implement me")
+	return
+}
+
+func (m mockWSConnection) SetPongHandler(h func(appData string) error) {}
+
+func (m mockWSConnection) SetPingHandler(h func(appData string) error) {}
+
+func (m mockWSConnection) Subprotocol() string { return "" }
+
+func newMockSession() transport.WebsocketConnection {
+	return &mockWSConnection{}
+}
+
 func TestCloseWebsocketPeer(t *testing.T) {
-	routerConfig := &router.Config{
-		RealmConfigs: []*router.RealmConfig{
-			{
-				URI: wamp.URI("nexus.test.realm"),
-			},
-		},
-	}
-	r, err := router.NewRouter(routerConfig, nil)
-	require.NoError(t, err)
-	defer r.Close()
-
-	const wsAddr = "127.0.0.1:8000"
-	closer, err := router.NewWebsocketServer(r).ListenAndServe(wsAddr)
-	require.NoError(t, err)
-	defer closer.Close()
-
-	client, err := transport.ConnectWebsocketPeer(
-		context.Background(), fmt.Sprintf("ws://%s/", wsAddr), serialize.JSON, nil, r.Logger(), nil)
-	require.NoError(t, err)
+	peer := transport.NewWebsocketPeer(newMockSession(), &serialize.JSONSerializer{}, websocket.TextMessage, log.Default(), 0, 0)
 
 	// Close the client connection.
-	client.Close()
+	peer.Close()
 
 	// Try closing the client connection again. It should not cause an error.
-	client.Close()
+	peer.Close()
 }
